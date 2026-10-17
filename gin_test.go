@@ -1264,4 +1264,3 @@ func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
 		assert.Equal(t, "/a/b", matchedRoute)
 	}
 }
-

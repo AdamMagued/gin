@@ -1185,4 +1185,3 @@ func TestTreeTrailingSlashAndParamRoute(t *testing.T) {
 		t.Errorf("Expected TSR=true for '/a/b/' when '/a/b' exists and '/:p/b/x' does not match")
 	}
 }
-
