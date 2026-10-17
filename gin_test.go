@@ -1198,37 +1198,28 @@ func TestRouterQueryMethod(t *testing.T) {
 
 func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
 	for _, redirectTrailingSlash := range []bool{false, true} {
-		router := New()
-		router.RedirectTrailingSlash = redirectTrailingSlash
+		// Case 1: Route /b/ and /:name, request /b
+		router1 := New()
+		router1.RedirectTrailingSlash = redirectTrailingSlash
 
 		var matchedRoute string
 		var matchedParams Params
 
-		router.GET("/b/", func(c *Context) {
+		router1.GET("/b/", func(c *Context) {
 			matchedRoute = "/b/"
 			matchedParams = c.Params
 			c.String(http.StatusOK, "b_slash")
 		})
-		router.GET("/:name", func(c *Context) {
+		router1.GET("/:name", func(c *Context) {
 			matchedRoute = "/:name"
 			matchedParams = c.Params
 			c.String(http.StatusOK, "name")
-		})
-		router.GET("/a/b", func(c *Context) {
-			matchedRoute = "/a/b"
-			matchedParams = c.Params
-			c.String(http.StatusOK, "ab")
-		})
-		router.GET("/:p/b/", func(c *Context) {
-			matchedRoute = "/:p/b/"
-			matchedParams = c.Params
-			c.String(http.StatusOK, "pb_slash")
 		})
 
 		// GET /b -> should match /:name with name=b
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/b", nil)
-		router.ServeHTTP(w, req)
+		router1.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/:name", matchedRoute)
 		assert.Equal(t, Params{Param{Key: "name", Value: "b"}}, matchedParams)
@@ -1236,22 +1227,37 @@ func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
 		// GET /b/ -> should match /b/
 		w = httptest.NewRecorder()
 		req, _ = http.NewRequest(http.MethodGet, "/b/", nil)
-		router.ServeHTTP(w, req)
+		router1.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/b/", matchedRoute)
 
 		// GET /c -> should match /:name with name=c
 		w = httptest.NewRecorder()
 		req, _ = http.NewRequest(http.MethodGet, "/c", nil)
-		router.ServeHTTP(w, req)
+		router1.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/:name", matchedRoute)
 		assert.Equal(t, Params{Param{Key: "name", Value: "c"}}, matchedParams)
 
+		// Case 2: Mirror case: /a/b and /:p/b/, request /a/b/
+		router2 := New()
+		router2.RedirectTrailingSlash = redirectTrailingSlash
+
+		router2.GET("/a/b", func(c *Context) {
+			matchedRoute = "/a/b"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab")
+		})
+		router2.GET("/:p/b/", func(c *Context) {
+			matchedRoute = "/:p/b/"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "pb_slash")
+		})
+
 		// GET /a/b/ -> should match /:p/b/ with p=a
 		w = httptest.NewRecorder()
 		req, _ = http.NewRequest(http.MethodGet, "/a/b/", nil)
-		router.ServeHTTP(w, req)
+		router2.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/:p/b/", matchedRoute)
 		assert.Equal(t, Params{Param{Key: "p", Value: "a"}}, matchedParams)
@@ -1259,7 +1265,7 @@ func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
 		// GET /a/b -> should match /a/b
 		w = httptest.NewRecorder()
 		req, _ = http.NewRequest(http.MethodGet, "/a/b", nil)
-		router.ServeHTTP(w, req)
+		router2.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/a/b", matchedRoute)
 	}
